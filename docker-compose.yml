@@ -1,0 +1,46 @@
+version: "3.8"
+
+services:
+  mongo:
+    image: mongo:6.0
+    container_name: transcriber-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: transcriber
+    volumes:
+      - mongo_data:/data/db
+
+  # backend:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #     args:
+  #       model: turbo
+  #   container_name: transcriber_backend
+  #   restart: unless-stopped
+  #   ports:
+  #     - "8090:8090"
+  #   environment:
+  #     MONGO_URI: mongodb://mongo:27017/transcriber
+  #     FLASK_SECRET_KEY: supersecretkey
+  #     WHISPER_MODEL: turbo
+  #   depends_on:
+  #     - mongo
+  #   volumes:
+  #     - ./backend:/app
+  #     - ./config/.env:/app/.env
+
+  nginx:
+    image: nginx:1.25
+    container_name: transcriber_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./frontend:/usr/share/nginx/html:ro
+
+volumes:
+  mongo_data:

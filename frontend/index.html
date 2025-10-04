@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Whisper Demo - Audio Transcription</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                margin: 2em;
+                background: #f7f7f7;
+            }
+            .container {
+                max-width: 600px;
+                margin: auto;
+                background: #fff;
+                padding: 2em;
+                border-radius: 8px;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            }
+            h1 {
+                text-align: center;
+            }
+            label {
+                font-weight: bold;
+            }
+            input[type="file"] {
+                margin-bottom: 1em;
+            }
+            button {
+                padding: 0.5em 1.5em;
+                font-size: 1em;
+                border-radius: 4px;
+                border: none;
+                background: #007bff;
+                color: #fff;
+                cursor: pointer;
+            }
+            button:disabled {
+                background: #aaa;
+            }
+            .result {
+                margin-top: 2em;
+            }
+            .error {
+                color: #c00;
+                margin-top: 1em;
+            }
+            .segment {
+                margin-bottom: 1em;
+                padding: 0.5em;
+                background: #f0f0f0;
+                border-radius: 4px;
+            }
+            .timestamp {
+                font-size: 0.9em;
+                color: #555;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>Whisper Audio Transcription</h1>
+            <form id="uploadForm">
+                <label for="audioFile">Select audio file:</label><br />
+                <input
+                    type="file"
+                    id="audioFile"
+                    name="audio"
+                    accept="*"
+                    required
+                /><br />
+                <button type="submit" id="submitBtn">Transcribe</button>
+            </form>
+            <div class="error" id="errorMsg"></div>
+            <div class="result" id="result"></div>
+        </div>
+        <script>
+            const form = document.getElementById("uploadForm");
+            const errorMsg = document.getElementById("errorMsg");
+            const resultDiv = document.getElementById("result");
+            const submitBtn = document.getElementById("submitBtn");
+
+            form.addEventListener("submit", async function (e) {
+                e.preventDefault();
+                errorMsg.textContent = "";
+                resultDiv.innerHTML = "";
+                submitBtn.disabled = true;
+
+                const fileInput = document.getElementById("audioFile");
+                if (!fileInput.files.length) {
+                    errorMsg.textContent = "Please select an audio file.";
+                    submitBtn.disabled = false;
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append("audio", fileInput.files[0]);
+
+                try {
+                    const response = await fetch(
+                        "http://localhost:8090/api/transcribe",
+                        {
+                            method: "POST",
+                            body: formData,
+                        },
+                    );
+
+                    const data = await response.json();
+                    if (!response.ok) {
+                        throw new Error(data.error || "Transcription failed.");
+                    }
+
+                    // Display transcript
+                    let html = `<h2>Transcript</h2>`;
+                    html += `<p><strong>File:</strong> ${data.filename}</p>`;
+                    html += `<p><strong>Transcript ID:</strong> <code>${data.transcript_id}</code></p>`;
+                    html += `<div>`;
+                    data.segments.forEach((seg) => {
+                        html += `<div class="segment">
+            <span class="timestamp">${seg.timestamp.start} - ${seg.timestamp.end}</span><br>
+            ${seg.segment}
+          </div>`;
+                    });
+                    html += `</div>`;
+                    resultDiv.innerHTML = html;
+                } catch (err) {
+                    errorMsg.textContent = err.message;
+                } finally {
+                    submitBtn.disabled = false;
+                }
+            });
+        </script>
+    </body>
+</html>
