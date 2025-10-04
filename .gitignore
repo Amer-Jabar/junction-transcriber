@@ -1,0 +1,4 @@
+backend/__pycache__
+backend/.env
+.venv
+minio_data

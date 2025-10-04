@@ -5,3 +5,5 @@ openai-whisper
 flask_cors
 torch
 transformers
+pika
+minio
