@@ -1,5 +1,7 @@
 Flask
 pymongo
 python-dotenv
-voxtral
+openai-whisper
 flask_cors
+torch
+transformers

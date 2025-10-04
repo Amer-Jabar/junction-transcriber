@@ -4,14 +4,17 @@ from flask import Flask, request, jsonify
 from werkzeug.utils import secure_filename
 from pymongo import MongoClient
 from dotenv import load_dotenv
-import voxtral
+import whisper
 from flask_cors import CORS
+from category_classifier import HateSpeechPredictor
 
 # Load environment variables
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "../config/.env"))
 
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/transcriber")
 FLASK_SECRET_KEY = os.getenv("FLASK_SECRET_KEY", "supersecretkey")
+WHISPER_MODEL = os.getenv("WHISPER_MODEL", "tiny")  # You can set this in .env
+
 # MongoDB setup
 mongo_client = MongoClient(MONGO_URI)
 db = mongo_client.get_database()
@@ -24,15 +27,19 @@ app.config["SECRET_KEY"] = FLASK_SECRET_KEY
 app.config["UPLOAD_FOLDER"] = tempfile.gettempdir()
 app.config["MAX_CONTENT_LENGTH"] = 100 * 1024 * 1024  # 100MB max upload
 
+# Whisper model (load once)
+whisper_model = whisper.load_model(WHISPER_MODEL)
+
+predictor = HateSpeechPredictor()
 
 def transcribe_audio(file_path):
-    # Voxtral API: voxtral.transcribe returns a dict with "segments"
-    result = voxtral.transcribe(file_path)
+    result = whisper_model.transcribe(file_path, no_speech_threshold=5)
     segments = []
     for segment in result.get("segments", []):
-        start = segment.get("start", 0)
-        end = segment.get("end", 0)
-        text = segment.get("text", "").strip()
+        start = segment["start"]
+        end = segment["end"]
+        text = segment["text"].strip()
+        category = predictor.predict([text])
         segments.append(
             {
                 "timestamp": {
@@ -40,6 +47,7 @@ def transcribe_audio(file_path):
                     "end": f"{int(end // 3600):02}:{int((end % 3600) // 60):02}:{end % 60:06.3f}",
                 },
                 "segment": text,
+                "category": category
             }
         )
     return segments
@@ -66,7 +74,6 @@ def upload_and_transcribe():
             "transcript": " ".join([s["segment"] for s in segments]),
         }
         result = transcripts_collection.insert_one(transcript_doc)
-
         transcript_doc["_id"] = str(result.inserted_id)
     except Exception as e:
         return jsonify({"error": str(e)}), 500

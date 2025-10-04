@@ -119,7 +119,8 @@
                     data.segments.forEach((seg) => {
                         html += `<div class="segment">
             <span class="timestamp">${seg.timestamp.start} - ${seg.timestamp.end}</span><br>
-            ${seg.segment}
+            <p>${seg.segment}</p>
+            <p style="color: red">${seg.category}</p>
           </div>`;
                     });
                     html += `</div>`;
