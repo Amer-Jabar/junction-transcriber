@@ -101,10 +101,9 @@ Open `frontend/index.html` in your browser.
 
 ## Usage
 
-1. Open the web UI (`frontend/index.html`).
-2. Upload an audio file.
-3. View the transcript with timestamps.
-4. Transcript is stored in MongoDB and can be retrieved via API.
+1. Run `python backend/app.py`
+2. Run `docker compose up -d --build`
+3. Go to `http://localhost:8080` in your browser.
 
 ---
 
@@ -118,39 +117,3 @@ Open `frontend/index.html` in your browser.
 ### `GET /api/transcript/<transcript_id>`
 
 - **Response:** JSON with transcript details.
-
----
-
-## Docker
-
-Build and run the container:
-
-```sh
-docker build --build-arg model=tiny -t transcriber .
-docker run -p 8090:8090 --env-file config/.env transcriber
-```
-
----
-
-## Best Practices Applied
-
-- Separation of concerns (backend, frontend, config)
-- Environment variable support
-- Error handling and input validation
-- Async I/O where applicable
-- Dependency management (`requirements.txt`)
-- Documentation
-
----
-
-## License
-
-MIT
-
----
-
-## Credits
-
-- [OpenAI Whisper](https://github.com/openai/whisper)
-- [Flask](https://flask.palletsprojects.com/)
-- [MongoDB](https://www.mongodb.com/)
