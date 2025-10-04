@@ -1,7 +1,6 @@
 import os
-import tempfile
 import json
-from flask import Flask, request, jsonify
+import tempfile
 from werkzeug.utils import secure_filename
 from pymongo import MongoClient
 from dotenv import load_dotenv
@@ -10,8 +9,7 @@ from flask_cors import CORS
 import pika
 import minio
 
-from backend.category_classifier import HateSpeechPredictor
-
+from category_classifier import HateSpeechPredictor
 
 # Load environment variables
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "../config/.env"))
@@ -25,21 +23,12 @@ mongo_client = MongoClient(MONGO_URI)
 db = mongo_client.get_database()
 transcripts_collection = db.transcripts
 
-# Flask setup
-app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}})
-app.config["SECRET_KEY"] = FLASK_SECRET_KEY
-app.config["UPLOAD_FOLDER"] = tempfile.gettempdir()
-app.config["MAX_CONTENT_LENGTH"] = 100 * 1024 * 1024  # 100MB max upload
-
 # Whisper model (load once)
 whisper_model = whisper.load_model(WHISPER_MODEL)
-
 predictor = HateSpeechPredictor()
 
 rmqConnection = pika.BlockingConnection(pika.ConnectionParameters('localhost', credentials=pika.PlainCredentials("admin", "password")))
 rmqChannel = rmqConnection.channel()
-
 detection_tasks_queue_name='detection_tasks'
 rmqChannel.queue_declare(queue=detection_tasks_queue_name)
 transcriptions_tasks_queue_name='transcriptions_tasks'
@@ -59,16 +48,6 @@ def transcribe(path: str, filename: str):
     rmqChannel.basic_publish(exchange='',
                           routing_key=detection_tasks_queue_name,
                           body=json.dumps({"transcript_id": transcript_id, "filename": filename}))
-
-    return jsonify(
-        {
-            "message": "Transcription successful",
-            "transcript_id": transcript_doc["_id"],
-            "filename": filename,
-            "segments": segments,
-            "transcript": transcript_doc["transcript"],
-        }
-    )
 
 def transcribe_audio(file_path):
     result = whisper_model.transcribe(file_path, no_speech_threshold=5)
@@ -95,7 +74,7 @@ def on_transcription_task(connection, method, properties, message):
     data = json.loads(message.decode('UTF-8'))
     filename = data["filename"]
 
-    temp_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+    temp_path = os.path.join(tempfile.gettempdir(), filename)
     minioClient.fget_object(audio_bucket_name, filename, temp_path)
 
     transcribe(temp_path, filename)
@@ -116,46 +95,5 @@ if not minioClient.bucket_exists(transcriptions_bucket_name):
 
 rmqChannel.start_consuming()
 
-
-@app.route("/api/transcribe", methods=["POST"])
-def upload_and_transcribe():
-    if "audio" not in request.files:
-        return jsonify({"error": "No audio file provided"}), 400
-
-    audio_file = request.files["audio"]
-    if audio_file.filename == "":
-        return jsonify({"error": "No selected file"}), 400
-
-    filename = secure_filename(audio_file.filename)
-    temp_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
-    audio_file.save(temp_path)
-
-    try:
-        return transcribe(temp_path, filename)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-    finally:
-        if os.path.exists(temp_path):
-            os.remove(temp_path)
-
-@app.route("/api/transcript/<transcript_id>", methods=["GET"])
-def get_transcript(transcript_id):
-    from bson.objectid import ObjectId
-
-    try:
-        doc = transcripts_collection.find_one({"_id": ObjectId(transcript_id)})
-        if not doc:
-            return jsonify({"error": "Transcript not found"}), 404
-        doc["_id"] = str(doc["_id"])
-        return jsonify(doc)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route("/")
-def index():
-    return jsonify({"message": "Whisper Demo API is running."})
-
-
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8090)
+    pass
