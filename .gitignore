@@ -2,3 +2,4 @@ __pycache__
 .env
 .venv
 minio_data
+.DS_Store

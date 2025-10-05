@@ -2,96 +2,337 @@
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <title>Whisper Demo - Audio Transcription</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <style>
-            body {
-                font-family: Arial, sans-serif;
-                margin: 2em;
-                background: #f7f7f7;
-            }
-            .container {
-                max-width: 600px;
-                margin: auto;
-                background: #fff;
-                padding: 2em;
-                border-radius: 8px;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-            }
-            h1 {
-                text-align: center;
-            }
-            label {
-                font-weight: bold;
-            }
-            input[type="file"] {
-                margin-bottom: 1em;
-            }
-            button {
-                padding: 0.5em 1.5em;
-                font-size: 1em;
-                border-radius: 4px;
-                border: none;
-                background: #007bff;
-                color: #fff;
-                cursor: pointer;
-            }
-            button:disabled {
-                background: #aaa;
-            }
-            .result {
-                margin-top: 2em;
-            }
-            .error {
-                color: #c00;
-                margin-top: 1em;
-            }
-            .segment {
-                margin-bottom: 1em;
-                padding: 0.5em;
-                background: #f0f0f0;
-                border-radius: 4px;
-            }
-            .timestamp {
-                font-size: 0.9em;
-                color: #555;
-            }
-        </style>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Extreme Views Filter</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script>
+            tailwind.config = {
+                theme: {
+                    extend: {
+                        animation: {
+                            "fade-in": "fadeIn 0.5s ease-in-out",
+                            "slide-up": "slideUp 0.3s ease-out",
+                            "pulse-slow":
+                                "pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+                        },
+                        keyframes: {
+                            fadeIn: {
+                                "0%": { opacity: "0" },
+                                "100%": { opacity: "1" },
+                            },
+                            slideUp: {
+                                "0%": {
+                                    transform: "translateY(20px)",
+                                    opacity: "0",
+                                },
+                                "100%": {
+                                    transform: "translateY(0)",
+                                    opacity: "1",
+                                },
+                            },
+                        },
+                    },
+                },
+            };
+        </script>
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+        />
     </head>
-    <body>
-        <div class="container">
-            <h1>Whisper Audio Transcription</h1>
-            <p>Update</p>
-            <form id="uploadForm">
-                <label for="audioFile">Select audio file:</label><br />
-                <input
-                    type="file"
-                    id="audioFile"
-                    name="audio"
-                    accept="*"
-                    required
-                /><br />
-                <button type="submit" id="submitBtn">Transcribe</button>
-            </form>
-            <div class="error" id="errorMsg"></div>
-            <div class="result" id="result"></div>
-        </div>
+    <body class="bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen">
+        <!-- Header -->
+        <header class="bg-white shadow-sm border-b border-gray-200">
+            <div class="max-w-4xl mx-auto px-6 py-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div
+                            class="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center"
+                        >
+                            <i class="fas fa-microphone text-white text-lg"></i>
+                        </div>
+                        <h1 class="text-2xl font-bold text-gray-900">
+                            Extreme Views Filter
+                        </h1>
+                    </div>
+                    <div
+                        class="hidden sm:flex items-center space-x-2 text-sm text-gray-500"
+                    >
+                        <i class="fas fa-shield-alt text-green-500"></i>
+                        <span>Powered by Whisper AI</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="max-w-4xl mx-auto px-6 py-12">
+            <div class="text-center mb-12 animate-fade-in">
+                <h2 class="text-4xl font-bold text-gray-900 mb-4">
+                    Transform Audio to Text
+                </h2>
+            </div>
+
+            <!-- Upload Card -->
+            <div
+                class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden animate-slide-up"
+            >
+                <div class="p-8">
+                    <form id="uploadForm">
+                        <!-- File Upload Area -->
+                        <div
+                            id="dropZone"
+                            class="relative border-2 border-dashed border-gray-300 rounded-xl p-12 text-center hover:border-blue-400 transition-all duration-300 group cursor-pointer bg-gray-50 hover:bg-blue-50"
+                        >
+                            <div id="uploadContent" class="space-y-4">
+                                <div
+                                    class="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center group-hover:bg-blue-200 transition-colors"
+                                >
+                                    <i
+                                        class="fas fa-cloud-upload-alt text-blue-500 text-2xl"
+                                    ></i>
+                                </div>
+                                <div>
+                                    <h3
+                                        class="text-lg font-semibold text-gray-900 mb-2"
+                                    >
+                                        Drop your audio file here
+                                    </h3>
+                                    <p class="text-gray-500 mb-4">
+                                        or click to browse from your device
+                                    </p>
+                                    <div
+                                        class="flex flex-wrap justify-center gap-2 text-xs text-gray-400"
+                                    >
+                                        <span
+                                            class="bg-gray-100 px-2 py-1 rounded"
+                                            >MP3</span
+                                        >
+                                        <span
+                                            class="bg-gray-100 px-2 py-1 rounded"
+                                            >WAV</span
+                                        >
+                                        <span
+                                            class="bg-gray-100 px-2 py-1 rounded"
+                                            >M4A</span
+                                        >
+                                        <span
+                                            class="bg-gray-100 px-2 py-1 rounded"
+                                            >OGG</span
+                                        >
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Selected File Display -->
+                            <div id="selectedFileInfo" class="hidden space-y-4">
+                                <div
+                                    class="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center"
+                                >
+                                    <i
+                                        class="fas fa-file-audio text-green-500 text-2xl"
+                                    ></i>
+                                </div>
+                                <div>
+                                    <h3
+                                        id="fileName"
+                                        class="text-lg font-semibold text-gray-900"
+                                    ></h3>
+                                    <p
+                                        id="fileSize"
+                                        class="text-gray-500 text-sm"
+                                    ></p>
+                                </div>
+                                <button
+                                    type="button"
+                                    id="changeFile"
+                                    class="text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors"
+                                >
+                                    Choose different file
+                                </button>
+                            </div>
+
+                            <input
+                                type="file"
+                                id="audioFile"
+                                name="audio"
+                                accept="audio/*"
+                                class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            />
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="mt-8 flex justify-center">
+                            <button
+                                type="submit"
+                                id="submitBtn"
+                                disabled
+                                class="relative px-8 py-4 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold rounded-xl shadow-lg hover:from-blue-600 hover:to-indigo-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                            >
+                                <span
+                                    id="submitText"
+                                    class="flex items-center space-x-2"
+                                >
+                                    <i class="fas fa-magic"></i>
+                                    <span>Start Transcription</span>
+                                </span>
+                                <span
+                                    id="loadingText"
+                                    class="hidden flex items-center space-x-2"
+                                >
+                                    <svg
+                                        class="animate-spin h-5 w-5"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <circle
+                                            class="opacity-25"
+                                            cx="12"
+                                            cy="12"
+                                            r="10"
+                                            stroke="currentColor"
+                                            stroke-width="4"
+                                        ></circle>
+                                        <path
+                                            class="opacity-75"
+                                            fill="currentColor"
+                                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                        ></path>
+                                    </svg>
+                                    <span>Processing...</span>
+                                </span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Error Display -->
+            <div
+                id="errorMsg"
+                class="hidden mt-6 p-4 bg-red-50 border border-red-200 rounded-xl"
+            >
+                <div class="flex items-start space-x-3">
+                    <i
+                        class="fas fa-exclamation-triangle text-red-500 mt-0.5"
+                    ></i>
+                    <div>
+                        <h4 class="font-semibold text-red-800">Upload Error</h4>
+                        <p id="errorText" class="text-red-700 mt-1"></p>
+                    </div>
+                </div>
+            </div>
+        </main>
+
         <script>
             const form = document.getElementById("uploadForm");
             const errorMsg = document.getElementById("errorMsg");
-            const resultDiv = document.getElementById("result");
+            const errorText = document.getElementById("errorText");
             const submitBtn = document.getElementById("submitBtn");
+            const submitText = document.getElementById("submitText");
+            const loadingText = document.getElementById("loadingText");
+            const dropZone = document.getElementById("dropZone");
+            const fileInput = document.getElementById("audioFile");
+            const uploadContent = document.getElementById("uploadContent");
+            const selectedFileInfo =
+                document.getElementById("selectedFileInfo");
+            const fileName = document.getElementById("fileName");
+            const fileSize = document.getElementById("fileSize");
+            const changeFileBtn = document.getElementById("changeFile");
 
-            form.addEventListener("submit", async function (e) {
+            // Drag and drop functionality
+            dropZone.addEventListener("dragover", (e) => {
                 e.preventDefault();
-                errorMsg.textContent = "";
-                resultDiv.innerHTML = "";
-                submitBtn.disabled = true;
+                dropZone.classList.add("border-blue-500", "bg-blue-50");
+            });
 
-                const fileInput = document.getElementById("audioFile");
+            dropZone.addEventListener("dragleave", (e) => {
+                e.preventDefault();
+                dropZone.classList.remove("border-blue-500", "bg-blue-50");
+            });
+
+            dropZone.addEventListener("drop", (e) => {
+                e.preventDefault();
+                dropZone.classList.remove("border-blue-500", "bg-blue-50");
+
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    fileInput.files = files;
+                    handleFileSelect(files[0]);
+                }
+            });
+
+            // File input change
+            fileInput.addEventListener("change", (e) => {
+                if (e.target.files.length > 0) {
+                    handleFileSelect(e.target.files[0]);
+                }
+            });
+
+            // Change file button
+            changeFileBtn.addEventListener("click", () => {
+                fileInput.click();
+            });
+
+            function handleFileSelect(file) {
+                // Hide upload content, show file info
+                uploadContent.classList.add("hidden");
+                selectedFileInfo.classList.remove("hidden");
+
+                // Update file info
+                fileName.textContent = file.name;
+                fileSize.textContent = formatFileSize(file.size);
+
+                // Enable submit button
+                submitBtn.disabled = false;
+
+                // Hide any previous error
+                hideError();
+            }
+
+            function formatFileSize(bytes) {
+                if (bytes === 0) return "0 Bytes";
+                const k = 1024;
+                const sizes = ["Bytes", "KB", "MB", "GB"];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return (
+                    parseFloat((bytes / Math.pow(k, i)).toFixed(2)) +
+                    " " +
+                    sizes[i]
+                );
+            }
+
+            function showError(message) {
+                errorText.textContent = message;
+                errorMsg.classList.remove("hidden");
+                errorMsg.scrollIntoView({ behavior: "smooth" });
+            }
+
+            function hideError() {
+                errorMsg.classList.add("hidden");
+            }
+
+            function setLoading(isLoading) {
+                submitBtn.disabled = isLoading;
+                if (isLoading) {
+                    submitText.classList.add("hidden");
+                    loadingText.classList.remove("hidden");
+                } else {
+                    submitText.classList.remove("hidden");
+                    loadingText.classList.add("hidden");
+                }
+            }
+
+            // Form submission
+            form.addEventListener("submit", async (e) => {
+                e.preventDefault();
+                hideError();
+                setLoading(true);
+
                 if (!fileInput.files.length) {
-                    errorMsg.textContent = "Please select an audio file.";
-                    submitBtn.disabled = false;
+                    showError("Please select an audio file.");
+                    setLoading(false);
                     return;
                 }
 
@@ -112,11 +353,16 @@
                         throw new Error(data.error || "Transcription failed.");
                     }
 
-                    window.location.href = `/transcription.html?transcriptionId=${data.transcript_id}`;
+                    // Redirect to transcription page with animation
+                    document.body.style.opacity = "0";
+                    document.body.style.transition = "opacity 0.3s";
+
+                    setTimeout(() => {
+                        window.location.href = `/transcription.html?transcriptionId=${data.transcript_id}`;
+                    }, 300);
                 } catch (error) {
-                    errorMsg.textContent = error.message;
-                } finally {
-                    submitBtn.disabled = false;
+                    showError(error.message);
+                    setLoading(false);
                 }
             });
         </script>

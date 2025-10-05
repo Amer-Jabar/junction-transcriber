@@ -2,120 +2,698 @@
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <title>Whisper Demo - Audio Transcription</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <style>
-            body {
-                font-family: Arial, sans-serif;
-                margin: 2em;
-                background: #f7f7f7;
-            }
-            .container {
-                max-width: 600px;
-                margin: auto;
-                background: #fff;
-                padding: 2em;
-                border-radius: 8px;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-            }
-            h1 {
-                text-align: center;
-            }
-            label {
-                font-weight: bold;
-            }
-            input[type="file"] {
-                margin-bottom: 1em;
-            }
-            button {
-                padding: 0.5em 1.5em;
-                font-size: 1em;
-                border-radius: 4px;
-                border: none;
-                background: #007bff;
-                color: #fff;
-                cursor: pointer;
-            }
-            button:disabled {
-                background: #aaa;
-            }
-            .result {
-                margin-top: 2em;
-            }
-            .error {
-                color: #c00;
-                margin-top: 1em;
-            }
-            .segment {
-                margin-bottom: 1em;
-                padding: 0.5em;
-                background: #f0f0f0;
-                border-radius: 4px;
-            }
-            .timestamp {
-                font-size: 0.9em;
-                color: #555;
-            }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <h1>Whisper Audio Transcription</h1>
-            <span>Transcription id: </span>
-            <div id="transcriptionId"></div>
-            <div class="error" id="errorMsg"></div>
-            <div class="result" id="result"></div>
-        </div>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Transcription Results - Audio Transcription Studio</title>
+        <script src="https://cdn.tailwindcss.com"></script>
         <script>
-            window.onload = async () => {
-                const delay = (ms) => new Promise((res) => setTimeout(res, ms));
-                const errorMsg = document.getElementById("errorMsg");
-                const resultDiv = document.getElementById("result");
-                const transcriptionIdDiv =
-                    document.getElementById("transcriptionId");
+            tailwind.config = {
+                theme: {
+                    extend: {
+                        animation: {
+                            "fade-in": "fadeIn 0.5s ease-in-out",
+                            "slide-up": "slideUp 0.3s ease-out",
+                            "pulse-slow":
+                                "pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+                            "bounce-slow": "bounce 2s infinite",
+                            typing: "typing 1.5s steps(20) infinite",
+                        },
+                        keyframes: {
+                            fadeIn: {
+                                "0%": { opacity: "0" },
+                                "100%": { opacity: "1" },
+                            },
+                            slideUp: {
+                                "0%": {
+                                    transform: "translateY(20px)",
+                                    opacity: "0",
+                                },
+                                "100%": {
+                                    transform: "translateY(0)",
+                                    opacity: "1",
+                                },
+                            },
+                            typing: {
+                                "0%, 100%": { opacity: "1" },
+                                "50%": { opacity: "0" },
+                            },
+                        },
+                    },
+                },
+            };
+        </script>
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+        />
+    </head>
+    <body class="bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen">
+        <!-- Header -->
+        <header class="bg-white shadow-sm border-b border-gray-200">
+            <div class="max-w-6xl mx-auto px-6 py-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div
+                            class="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center"
+                        >
+                            <i class="fas fa-microphone text-white text-lg"></i>
+                        </div>
+                        <h1 class="text-2xl font-bold text-gray-900">
+                            Audio Transcription Studio
+                        </h1>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <a
+                            href="/"
+                            class="flex items-center space-x-2 text-blue-600 hover:text-blue-700 transition-colors"
+                        >
+                            <i class="fas fa-arrow-left"></i>
+                            <span class="hidden sm:inline"
+                                >New Transcription</span
+                            >
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </header>
 
-                errorMsg.textContent = "";
-                resultDiv.innerHTML = "Prcessing...";
+        <!-- Main Content -->
+        <main class="max-w-6xl mx-auto px-6 py-8">
+            <!-- Loading State -->
+            <div id="loadingState" class="text-center py-16">
+                <div class="animate-fade-in">
+                    <div
+                        class="mx-auto w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mb-6"
+                    >
+                        <svg
+                            class="animate-spin h-10 w-10 text-blue-600"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                        >
+                            <circle
+                                class="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                stroke-width="4"
+                            ></circle>
+                            <path
+                                class="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            ></path>
+                        </svg>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-900 mb-3">
+                        Processing Your Audio
+                    </h2>
+                    <p class="text-gray-600 mb-6">
+                        Our AI is analyzing your audio file and generating the
+                        transcription
+                    </p>
 
-                // get transcription path parameter
-                const urlParams = new URLSearchParams(window.location.search);
-                const transcriptionId = urlParams.get("transcriptionId");
-                transcriptionIdDiv.innerHTML += `<code>${transcriptionId}</code>`;
+                    <!-- Progress Animation -->
+                    <div class="max-w-md mx-auto">
+                        <div
+                            class="flex items-center space-x-2 text-sm text-gray-500 mb-4"
+                        >
+                            <span>Transcription ID:</span>
+                            <code
+                                id="transcriptionId"
+                                class="bg-gray-100 px-2 py-1 rounded font-mono text-xs"
+                            ></code>
+                        </div>
 
+                        <div class="bg-gray-200 rounded-full h-2 mb-4">
+                            <div
+                                class="bg-gradient-to-r from-blue-500 to-indigo-600 h-2 rounded-full animate-pulse"
+                                style="width: 60%"
+                            ></div>
+                        </div>
+
+                        <div
+                            class="flex justify-center space-x-6 text-xs text-gray-500"
+                        >
+                            <div class="flex items-center space-x-1">
+                                <div
+                                    class="w-2 h-2 bg-green-500 rounded-full animate-pulse"
+                                ></div>
+                                <span>Audio uploaded</span>
+                            </div>
+                            <div class="flex items-center space-x-1">
+                                <div
+                                    class="w-2 h-2 bg-blue-500 rounded-full animate-bounce-slow"
+                                ></div>
+                                <span
+                                    >Processing<span class="animate-typing"
+                                        >...</span
+                                    ></span
+                                >
+                            </div>
+                            <div class="flex items-center space-x-1">
+                                <div
+                                    class="w-2 h-2 bg-gray-300 rounded-full"
+                                ></div>
+                                <span>Complete</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Error State -->
+            <div id="errorState" class="hidden">
+                <div class="max-w-2xl mx-auto text-center py-16">
+                    <div
+                        class="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6"
+                    >
+                        <i
+                            class="fas fa-exclamation-triangle text-red-500 text-3xl"
+                        ></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-900 mb-3">
+                        Processing Error
+                    </h2>
+                    <p id="errorText" class="text-red-600 mb-6"></p>
+                    <button
+                        onclick="location.reload()"
+                        class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                        <i class="fas fa-redo mr-2"></i>
+                        Try Again
+                    </button>
+                </div>
+            </div>
+
+            <!-- Results State -->
+            <div id="resultsState" class="hidden animate-fade-in">
+                <!-- File Info Card -->
+                <div
+                    class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8"
+                >
+                    <div
+                        class="flex flex-col md:flex-row md:items-center justify-between"
+                    >
+                        <div class="flex items-start space-x-4 mb-4 md:mb-0">
+                            <div
+                                class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center flex-shrink-0"
+                            >
+                                <i
+                                    class="fas fa-file-audio text-green-600 text-xl"
+                                ></i>
+                            </div>
+                            <div>
+                                <h3
+                                    id="fileName"
+                                    class="text-lg font-semibold text-gray-900 mb-1"
+                                ></h3>
+                                <div
+                                    class="flex items-center space-x-4 text-sm text-gray-500"
+                                >
+                                    <span class="flex items-center space-x-1">
+                                        <i class="fas fa-clock"></i>
+                                        <span id="processingTime"
+                                            >Completed</span
+                                        >
+                                    </span>
+                                    <span class="flex items-center space-x-1">
+                                        <i class="fas fa-hashtag"></i>
+                                        <span id="transcriptId"></span>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center space-x-3">
+                            <button
+                                id="copyBtn"
+                                class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors flex items-center space-x-2"
+                            >
+                                <i class="fas fa-copy"></i>
+                                <span>Copy Text</span>
+                            </button>
+                            <button
+                                id="downloadBtn"
+                                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center space-x-2"
+                            >
+                                <i class="fas fa-download"></i>
+                                <span>Download</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Category Summary -->
+                <div
+                    class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8"
+                >
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-xl font-bold text-gray-900">
+                            Category Summary
+                        </h2>
+                        <button
+                            id="clearFiltersBtn"
+                            class="hidden text-sm text-blue-600 hover:text-blue-700 transition-colors"
+                        >
+                            Clear filters
+                        </button>
+                    </div>
+
+                    <div
+                        id="categorySummary"
+                        class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3"
+                    >
+                        <!-- Category cards will be inserted here -->
+                    </div>
+                </div>
+
+                <!-- Transcription Results -->
+                <div
+                    class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden"
+                >
+                    <div class="p-6 border-b border-gray-100">
+                        <div
+                            class="flex flex-col sm:flex-row sm:items-center justify-between space-y-3 sm:space-y-0"
+                        >
+                            <h2 class="text-xl font-bold text-gray-900">
+                                Transcription Results
+                            </h2>
+                            <div
+                                class="flex items-center justify-between sm:justify-end space-x-4"
+                            >
+                                <div
+                                    class="flex items-center space-x-2 text-sm text-gray-500"
+                                >
+                                    <i class="fas fa-comments"></i>
+                                    <span id="visibleSegmentCount"></span>
+                                    <span>of</span>
+                                    <span id="totalSegmentCount"></span>
+                                    <span>segments</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Segments Container -->
+                    <div
+                        id="segmentsContainer"
+                        class="divide-y divide-gray-100 max-h-96 overflow-y-auto"
+                    >
+                        <!-- Segments will be inserted here -->
+                    </div>
+                </div>
+
+                <!-- Full Transcript Card -->
+                <div
+                    class="bg-white rounded-2xl shadow-sm border border-gray-100 mt-8"
+                >
+                    <div class="p-6 border-b border-gray-100">
+                        <h2 class="text-xl font-bold text-gray-900">
+                            Complete Transcript
+                        </h2>
+                    </div>
+                    <div class="p-6">
+                        <div
+                            id="fullTranscript"
+                            class="prose max-w-none text-gray-700 leading-relaxed"
+                        ></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <script>
+            const loadingState = document.getElementById("loadingState");
+            const errorState = document.getElementById("errorState");
+            const resultsState = document.getElementById("resultsState");
+            const errorText = document.getElementById("errorText");
+            const transcriptionIdEl =
+                document.getElementById("transcriptionId");
+            const fileNameEl = document.getElementById("fileName");
+            const transcriptIdEl = document.getElementById("transcriptId");
+            const segmentCountEl = document.getElementById("segmentCount");
+            const segmentsContainer =
+                document.getElementById("segmentsContainer");
+            const fullTranscript = document.getElementById("fullTranscript");
+            const copyBtn = document.getElementById("copyBtn");
+            const downloadBtn = document.getElementById("downloadBtn");
+
+            let transcriptionData = null;
+            let activeFilters = new Set();
+
+            const delay = (ms) => new Promise((res) => setTimeout(res, ms));
+
+            // Get transcription ID from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const transcriptionId = urlParams.get("transcriptionId");
+
+            if (!transcriptionId) {
+                showError("No transcription ID provided");
+            } else {
+                transcriptionIdEl.textContent = transcriptionId;
+                fetchTranscription();
+            }
+
+            async function fetchTranscription() {
                 try {
                     let data;
                     while (true) {
                         const response = await fetch(
                             `http://localhost:8090/api/transcript/${transcriptionId}`,
                         );
-
                         data = await response.json();
+
                         if (!response.ok) {
-                            console.log(`Getting transcription ${data.error}`);
-                            await delay(1000);
+                            console.log(`Getting transcription: ${data.error}`);
+                            await delay(2000);
                         } else {
                             break;
                         }
                     }
 
-                    // Display transcript
-                    let html = `<h2>Transcript</h2>`;
-                    html += `<p><strong>File:</strong> ${data.filename}</p>`;
-                    html += `<p><strong>Transcript ID:</strong> <code>${data.transcript_id}</code></p>`;
-                    html += `<div>`;
-                    data.segments.forEach((seg) => {
-                        html += `<div class="segment">
-                          <span class="timestamp">${seg.timestamp.start} - ${seg.timestamp.end}</span><br>
-                          <p>${seg.segment}</p>
-                          <p style="color: red">${seg.category}</p>
-                        </div>`;
-                    });
-                    html += `</div>`;
-                    resultDiv.innerHTML = html;
-                } catch (err) {
-                    errorMsg.textContent = err.message;
+                    transcriptionData = data;
+                    displayResults(data);
+                } catch (error) {
+                    console.error("Error fetching transcription:", error);
+                    showError(error.message);
                 }
-            };
+            }
+
+            function showError(message) {
+                errorText.textContent = message;
+                loadingState.classList.add("hidden");
+                errorState.classList.remove("hidden");
+            }
+
+            function displayResults(data) {
+                // Hide loading, show results
+                loadingState.classList.add("hidden");
+                resultsState.classList.remove("hidden");
+
+                // Populate file info
+                fileNameEl.textContent = data.filename || "Unknown File";
+                transcriptIdEl.textContent = data.transcript_id;
+                document.getElementById("totalSegmentCount").textContent =
+                    data.segments.length;
+                document.getElementById("visibleSegmentCount").textContent =
+                    data.segments.length;
+
+                // Create category summary
+                createCategorySummary(data.segments);
+
+                // Create segments
+                let fullText = "";
+                data.segments.forEach((segment, index) => {
+                    const segmentEl = createSegmentElement(segment, index);
+                    segmentsContainer.appendChild(segmentEl);
+                    fullText += segment.segment + " ";
+                });
+
+                // Set full transcript
+                fullTranscript.textContent = fullText.trim();
+
+                // Add event listeners
+                copyBtn.addEventListener("click", copyToClipboard);
+                downloadBtn.addEventListener("click", downloadTranscript);
+                document
+                    .getElementById("clearFiltersBtn")
+                    .addEventListener("click", clearAllFilters);
+
+                // Animate segments in
+                animateSegmentsIn();
+            }
+
+            function createCategorySummary(segments) {
+                const categoryCounts = {};
+
+                // Count categories
+                segments.forEach((segment) => {
+                    const category = segment.category || "uncategorized";
+                    categoryCounts[category] =
+                        (categoryCounts[category] || 0) + 1;
+                });
+
+                const categorySummary =
+                    document.getElementById("categorySummary");
+                categorySummary.innerHTML = "";
+
+                // Sort categories by count
+                const sortedCategories = Object.entries(categoryCounts).sort(
+                    ([, a], [, b]) => b - a,
+                );
+
+                sortedCategories.forEach(([category, count]) => {
+                    const categoryCard = createCategoryCard(category, count);
+                    categorySummary.appendChild(categoryCard);
+                });
+            }
+
+            function createCategoryCard(category, count) {
+                const div = document.createElement("div");
+                div.className = `category-filter cursor-pointer rounded-lg p-4 border-2 transition-all duration-200 hover:shadow-md ${getCategoryCardStyle(category)}`;
+                div.dataset.category = category;
+
+                const categoryIcon = getCategoryIcon(category);
+                const categoryColor = getCategoryColor(category);
+
+                div.innerHTML = `
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center space-x-2">
+                            <i class="${categoryIcon} text-lg"></i>
+                            <span class="font-medium capitalize">${category}</span>
+                        </div>
+                        <span class="text-2xl font-bold">${count}</span>
+                    </div>
+                    <div class="text-sm text-gray-600">
+                        ${count === 1 ? "segment" : "segments"}
+                    </div>
+                `;
+
+                div.addEventListener("click", () =>
+                    toggleCategoryFilter(category, div),
+                );
+                return div;
+            }
+
+            function getCategoryCardStyle(category) {
+                const styles = {
+                    offensive:
+                        "border-blue-200 bg-blue-50 hover:border-blue-300",
+                    toxic: "border-green-200 bg-green-50 hover:border-green-300",
+                    normal: "border-gray-200 bg-gray-50 hover:border-gray-300",
+                };
+                return styles[category?.toLowerCase()] || styles.uncategorized;
+            }
+
+            function getCategoryIcon(category) {
+                const icons = {
+                    offensive: "fas fa-question-circle text-blue-600",
+                    answer: "fas fa-check-circle text-green-600",
+                    normal: "fas fa-comment text-gray-600",
+                };
+                return icons[category?.toLowerCase()] || icons.uncategorized;
+            }
+
+            function toggleCategoryFilter(category, cardElement) {
+                if (activeFilters.has(category)) {
+                    // Remove filter
+                    activeFilters.delete(category);
+                    cardElement.classList.remove(
+                        "ring-2",
+                        "ring-blue-500",
+                        "bg-blue-100",
+                    );
+                    cardElement.classList.add(
+                        ...getCategoryCardStyle(category).split(" "),
+                    );
+                } else {
+                    // Add filter
+                    activeFilters.add(category);
+                    cardElement.classList.remove(
+                        ...getCategoryCardStyle(category).split(" "),
+                    );
+                    cardElement.classList.add(
+                        "ring-2",
+                        "ring-blue-500",
+                        "bg-blue-100",
+                        "border-blue-300",
+                    );
+                }
+
+                applyFilters();
+                updateClearFiltersButton();
+            }
+
+            function applyFilters() {
+                const segments = document.querySelectorAll(".segment-item");
+                let visibleCount = 0;
+
+                segments.forEach((segment) => {
+                    const category =
+                        segment.dataset.category || "uncategorized";
+
+                    if (
+                        activeFilters.size === 0 ||
+                        activeFilters.has(category)
+                    ) {
+                        segment.style.display = "";
+                        visibleCount++;
+                    } else {
+                        segment.style.display = "none";
+                    }
+                });
+
+                document.getElementById("visibleSegmentCount").textContent =
+                    visibleCount;
+            }
+
+            function updateClearFiltersButton() {
+                const clearBtn = document.getElementById("clearFiltersBtn");
+                if (activeFilters.size > 0) {
+                    clearBtn.classList.remove("hidden");
+                } else {
+                    clearBtn.classList.add("hidden");
+                }
+            }
+
+            function clearAllFilters() {
+                activeFilters.clear();
+
+                // Reset all category cards
+                document
+                    .querySelectorAll(".category-filter")
+                    .forEach((card) => {
+                        const category = card.dataset.category;
+                        card.classList.remove(
+                            "ring-2",
+                            "ring-blue-500",
+                            "bg-blue-100",
+                            "border-blue-300",
+                        );
+                        card.classList.add(
+                            ...getCategoryCardStyle(category).split(" "),
+                        );
+                    });
+
+                applyFilters();
+                updateClearFiltersButton();
+            }
+
+            function createSegmentElement(segment, index) {
+                const div = document.createElement("div");
+                div.className =
+                    "p-6 hover:bg-gray-50 transition-colors segment-item";
+                div.style.opacity = "0";
+                div.style.transform = "translateY(20px)";
+                div.dataset.category = segment.category || "uncategorized";
+
+                const categoryColor = getCategoryColor(segment.category);
+
+                div.innerHTML = `
+                <div class="flex items-start space-x-4">
+                    <div class="flex-shrink-0 w-32 text-center">
+                        <div class="text-xs text-gray-500 font-mono bg-gray-100 px-2 py-1 rounded">
+                            ${segment.timestamp.start}
+                        </div>
+                        <div class="text-xs text-gray-400 mt-1">
+                            ${segment.timestamp.end}
+                        </div>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-start justify-between mb-2">
+                            <p class="text-gray-900 leading-relaxed">${segment.segment}</p>
+                        </div>
+                        ${
+                            segment.category
+                                ? `
+                            <div class="flex items-center space-x-2 mt-2">
+                                <span class="px-2 py-1 text-xs font-medium rounded-full ${categoryColor}">
+                                    ${segment.category}
+                                </span>
+                            </div>
+                        `
+                                : ""
+                        }
+                    </div>
+                </div>
+            `;
+
+                return div;
+            }
+
+            function getCategoryColor(category) {
+                const colors = {
+                    normal: "bg-green-100 text-grey-800",
+                    toxic: "bg-green-100 text-green-800",
+                    offensive: "bg-red-100 text-red-800",
+                };
+                return (
+                    colors[category[0].toLowerCase()] ||
+                    "bg-gray-100 text-gray-800"
+                );
+            }
+
+            function formatTimestamp(seconds) {
+                const mins = Math.floor(seconds / 60);
+                const secs = Math.floor(seconds % 60);
+                return `${mins}:${secs.toString().padStart(2, "0")}`;
+            }
+
+            function animateSegmentsIn() {
+                const segments = document.querySelectorAll(".segment-item");
+                segments.forEach((segment, index) => {
+                    segment.style.transition =
+                        "opacity 0.3s ease-out, transform 0.3s ease-out";
+                    segment.style.opacity = "1";
+                    segment.style.transform = "translateY(0)";
+                });
+            }
+
+            async function copyToClipboard() {
+                if (!transcriptionData) return;
+
+                const text = transcriptionData.segments
+                    .map((s) => s.segment)
+                    .join(" ");
+
+                try {
+                    await navigator.clipboard.writeText(text);
+
+                    // Visual feedback
+                    const originalText = copyBtn.innerHTML;
+                    copyBtn.innerHTML =
+                        '<i class="fas fa-check text-green-600"></i><span class="text-green-600">Copied!</span>';
+                    copyBtn.classList.add("bg-green-50");
+
+                    setTimeout(() => {
+                        copyBtn.innerHTML = originalText;
+                        copyBtn.classList.remove("bg-green-50");
+                    }, 2000);
+                } catch (err) {
+                    console.error("Failed to copy text:", err);
+                }
+            }
+
+            function downloadTranscript() {
+                if (!transcriptionData) return;
+
+                const content = transcriptionData.segments
+                    .map((segment) => {
+                        return `[${segment.timestamp.start} - ${segment.timestamp.end}]\n${segment.segment}\n${segment.category ? `Category: ${segment.category}` : ""}\n`;
+                    })
+                    .join("\n");
+
+                const blob = new Blob([content], { type: "text/plain" });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `transcript-${transcriptionId}.txt`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            }
         </script>
     </body>
 </html>
