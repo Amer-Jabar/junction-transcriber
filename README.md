@@ -11,3 +11,8 @@ python junction-backend/app.py
 ```
 
 2. Open localhost
+
+# Datasets
+- https://github.com/t-davidson/hate-speech-and-offensive-language
+- https://www.kaggle.com/datasets/waalbannyantudre/hate-speech-detection-curated-dataset/data
+- https://github.com/hate-alert/HateXplain/
