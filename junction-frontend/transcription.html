@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Whisper Demo - Audio Transcription</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                margin: 2em;
+                background: #f7f7f7;
+            }
+            .container {
+                max-width: 600px;
+                margin: auto;
+                background: #fff;
+                padding: 2em;
+                border-radius: 8px;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            }
+            h1 {
+                text-align: center;
+            }
+            label {
+                font-weight: bold;
+            }
+            input[type="file"] {
+                margin-bottom: 1em;
+            }
+            button {
+                padding: 0.5em 1.5em;
+                font-size: 1em;
+                border-radius: 4px;
+                border: none;
+                background: #007bff;
+                color: #fff;
+                cursor: pointer;
+            }
+            button:disabled {
+                background: #aaa;
+            }
+            .result {
+                margin-top: 2em;
+            }
+            .error {
+                color: #c00;
+                margin-top: 1em;
+            }
+            .segment {
+                margin-bottom: 1em;
+                padding: 0.5em;
+                background: #f0f0f0;
+                border-radius: 4px;
+            }
+            .timestamp {
+                font-size: 0.9em;
+                color: #555;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>Whisper Audio Transcription</h1>
+            <span>Transcription id: </span>
+            <div id="transcriptionId"></div>
+            <div class="error" id="errorMsg"></div>
+            <div class="result" id="result"></div>
+        </div>
+        <script>
+            window.onload = async () => {
+                const delay = (ms) => new Promise((res) => setTimeout(res, ms));
+                const errorMsg = document.getElementById("errorMsg");
+                const resultDiv = document.getElementById("result");
+                const transcriptionIdDiv =
+                    document.getElementById("transcriptionId");
+
+                errorMsg.textContent = "";
+                resultDiv.innerHTML = "Prcessing...";
+
+                // get transcription path parameter
+                const urlParams = new URLSearchParams(window.location.search);
+                const transcriptionId = urlParams.get("transcriptionId");
+                transcriptionIdDiv.innerHTML += `<code>${transcriptionId}</code>`;
+
+                try {
+                    let data;
+                    while (true) {
+                        const response = await fetch(
+                            `http://localhost:8090/api/transcript/${transcriptionId}`,
+                        );
+
+                        data = await response.json();
+                        if (!response.ok) {
+                            console.log(`Getting transcription ${data.error}`);
+                            await delay(1000);
+                        } else {
+                            break;
+                        }
+                    }
+
+                    // Display transcript
+                    let html = `<h2>Transcript</h2>`;
+                    html += `<p><strong>File:</strong> ${data.filename}</p>`;
+                    html += `<p><strong>Transcript ID:</strong> <code>${data.transcript_id}</code></p>`;
+                    html += `<div>`;
+                    data.segments.forEach((seg) => {
+                        html += `<div class="segment">
+                          <span class="timestamp">${seg.timestamp.start} - ${seg.timestamp.end}</span><br>
+                          <p>${seg.segment}</p>
+                          <p style="color: red">${seg.category}</p>
+                        </div>`;
+                    });
+                    html += `</div>`;
+                    resultDiv.innerHTML = html;
+                } catch (err) {
+                    errorMsg.textContent = err.message;
+                }
+            };
+        </script>
+    </body>
+</html>

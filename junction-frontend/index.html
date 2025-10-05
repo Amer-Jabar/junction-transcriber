@@ -61,6 +61,7 @@
     <body>
         <div class="container">
             <h1>Whisper Audio Transcription</h1>
+            <p>Update</p>
             <form id="uploadForm">
                 <label for="audioFile">Select audio file:</label><br />
                 <input
@@ -111,22 +112,9 @@
                         throw new Error(data.error || "Transcription failed.");
                     }
 
-                    // Display transcript
-                    let html = `<h2>Transcript</h2>`;
-                    html += `<p><strong>File:</strong> ${data.filename}</p>`;
-                    html += `<p><strong>Transcript ID:</strong> <code>${data.transcript_id}</code></p>`;
-                    html += `<div>`;
-                    data.segments.forEach((seg) => {
-                        html += `<div class="segment">
-            <span class="timestamp">${seg.timestamp.start} - ${seg.timestamp.end}</span><br>
-            <p>${seg.segment}</p>
-            <p style="color: red">${seg.category}</p>
-          </div>`;
-                    });
-                    html += `</div>`;
-                    resultDiv.innerHTML = html;
-                } catch (err) {
-                    errorMsg.textContent = err.message;
+                    window.location.href = `/transcription.html?transcriptionId=${data.transcript_id}`;
+                } catch (error) {
+                    errorMsg.textContent = error.message;
                 } finally {
                     submitBtn.disabled = false;
                 }

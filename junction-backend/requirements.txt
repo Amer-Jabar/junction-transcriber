@@ -3,3 +3,4 @@ python-dotenv
 flask_cors
 pika
 minio
+uuid

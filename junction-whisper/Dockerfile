@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg && \
 ARG model
 
 # Copy requirements and install
-COPY backend .
+COPY . .
 RUN pip install -r requirements.txt
 # Pre-download the whisper model during build
 # whisper stores models in ~/.cache/whisper

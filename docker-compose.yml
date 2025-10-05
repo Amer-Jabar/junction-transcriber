@@ -40,7 +40,7 @@ services:
       - "80:80"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./frontend:/usr/share/nginx/html:ro
+      - ./junction-frontend:/usr/share/nginx/html:ro
 
   rabbitmq:
     image: rabbitmq:3.11-management
